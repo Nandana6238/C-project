@@ -1,0 +1,193 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX 10
+
+void inputMatrix(float mat[MAX][MAX], int row, int col) {
+    printf("Enter elements:\n");
+    for (int i = 0; i < row; i++)
+        for (int j = 0; j < col; j++)
+            scanf("%f", &mat[i][j]);
+}
+
+void displayMatrix(float mat[MAX][MAX], int row, int col) {
+    for (int i = 0; i < row; i++) {
+        for (int j = 0; j < col; j++)
+            printf("%8.2f ", mat[i][j]);
+        printf("\n");
+    }
+}
+
+void addMatrix(float A[MAX][MAX], float B[MAX][MAX], float result[MAX][MAX], int row, int col) {
+    for (int i = 0; i < row; i++)
+        for (int j = 0; j < col; j++)
+            result[i][j] = A[i][j] + B[i][j];
+}
+
+void subtractMatrix(float A[MAX][MAX], float B[MAX][MAX], float result[MAX][MAX], int row, int col) {
+    for (int i = 0; i < row; i++)
+        for (int j = 0; j < col; j++)
+            result[i][j] = A[i][j] - B[i][j];
+}
+
+void multiplyMatrix(float A[MAX][MAX], float B[MAX][MAX], float result[MAX][MAX], int r1, int c1, int c2) {
+    for (int i = 0; i < r1; i++)
+        for (int j = 0; j < c2; j++) {
+            result[i][j] = 0;
+            for (int k = 0; k < c1; k++)
+                result[i][j] += A[i][k] * B[k][j];
+        }
+}
+
+void transposeMatrix(float mat[MAX][MAX], float trans[MAX][MAX], int row, int col) {
+    for (int i = 0; i < row; i++)
+        for (int j = 0; j < col; j++)
+            trans[j][i] = mat[i][j];
+}
+
+float determinant(float mat[MAX][MAX], int n) {
+    float det = 0;
+    if (n == 1)
+        return mat[0][0];
+
+    float temp[MAX][MAX];
+    int sign = 1;
+
+    for (int f = 0; f < n; f++) {
+        int subi = 0;
+        for (int i = 1; i < n; i++) {
+            int subj = 0;
+            for (int j = 0; j < n; j++) {
+                if (j == f)
+                    continue;
+                temp[subi][subj++] = mat[i][j];
+            }
+            subi++;
+        }
+        det += sign * mat[0][f] * determinant(temp, n - 1);
+        sign = -sign;
+    }
+    return det;
+}
+
+void getCofactor(float mat[MAX][MAX], float temp[MAX][MAX], int p, int q, int n) {
+    int i = 0, j = 0;
+    for (int row = 0; row < n; row++) {
+        for (int col = 0; col < n; col++) {
+            if (row != p && col != q) {
+                temp[i][j++] = mat[row][col];
+                if (j == n - 1) {
+                    j = 0;
+                    i++;
+                }
+            }
+        }
+    }
+}
+
+void adjoint(float mat[MAX][MAX], float adj[MAX][MAX], int n) {
+    if (n == 1) {
+        adj[0][0] = 1;
+        return;
+    }
+
+    float temp[MAX][MAX];
+    int sign;
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            getCofactor(mat, temp, i, j, n);
+            sign = ((i + j) % 2 == 0) ? 1 : -1;
+            adj[j][i] = sign * determinant(temp, n - 1);
+        }
+    }
+}
+
+int inverse(float mat[MAX][MAX], float inv[MAX][MAX], int n) {
+    float det = determinant(mat, n);
+    if (det == 0) {
+        printf("Matrix is singular, inverse not possible.\n");
+        return 0;
+    }
+
+    float adj[MAX][MAX];
+    adjoint(mat, adj, n);
+
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            inv[i][j] = adj[i][j] / det;
+
+    return 1;
+}
+
+int main() {
+    float A[MAX][MAX], B[MAX][MAX], result[MAX][MAX];
+    int r1, c1, r2, c2, choice;
+
+    printf("Enter rows and columns of Matrix A: ");
+    scanf("%d %d", &r1, &c1);
+    inputMatrix(A, r1, c1);
+
+    printf("Enter rows and columns of Matrix B: ");
+    scanf("%d %d", &r2, &c2);
+    inputMatrix(B, r2, c2);
+
+    do {
+        printf("\nMatrix Operations Menu:\n");
+        printf("1. Addition\n2. Subtraction\n3. Multiplication\n4. Transpose of A\n");
+        printf("5. Determinant of A\n6. Inverse of A\n0. Exit\nChoice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                if (r1 == r2 && c1 == c2) {
+                    addMatrix(A, B, result, r1, c1);
+                    displayMatrix(result, r1, c1);
+                } else
+                    printf("Matrix sizes incompatible for addition.\n");
+                break;
+            case 2:
+                if (r1 == r2 && c1 == c2) {
+                    subtractMatrix(A, B, result, r1, c1);
+                    displayMatrix(result, r1, c1);
+                } else
+                    printf("Matrix sizes incompatible for subtraction.\n");
+                break;
+            case 3:
+                if (c1 == r2) {
+                    multiplyMatrix(A, B, result, r1, c1, c2);
+                    displayMatrix(result, r1, c2);
+                } else
+                    printf("Matrix sizes incompatible for multiplication.\n");
+                break;
+            case 4: {
+                float trans[MAX][MAX];
+                transposeMatrix(A, trans, r1, c1);
+                displayMatrix(trans, c1, r1);
+                break;
+            }
+            case 5:
+                if (r1 == c1)
+                    printf("Determinant: %.2f\n", determinant(A, r1));
+                else
+                    printf("Matrix must be square to find determinant.\n");
+                break;
+            case 6:
+                if (r1 == c1) {
+                    float inv[MAX][MAX];
+                    if (inverse(A, inv, r1)) {
+                        printf("Inverse of A:\n");
+                        displayMatrix(inv, r1, r1);
+                    }
+                } else
+                    printf("Matrix must be square to find inverse.\n");
+                break;
+            case 0:
+                break;
+            default:
+                printf("Invalid choice.\n");
+        }
+    } while (choice != 0);
+
+    return 0;
+}
